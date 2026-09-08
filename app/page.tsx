@@ -1,3 +1,12 @@
-export default function Home() {
-  return <div className="min-h-[calc(100vh-3rem)] bg-background" />
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+
+export default async function Home() {
+  const { userId } = await auth();
+
+  if (userId) {
+    redirect("/editor");
+  }
+
+  redirect(process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL!);
 }
