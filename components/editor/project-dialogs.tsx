@@ -15,6 +15,7 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
     activeProject,
     createName,
     createSlug,
+    isCreateSlugValid,
     renameName,
     isLoading,
     setCreateName,
@@ -46,7 +47,11 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
             >
               Cancel
             </Button>
-            <Button type="submit" form="create-project-form" disabled={isLoading}>
+            <Button
+              type="submit"
+              form="create-project-form"
+              disabled={isLoading || !isCreateSlugValid}
+            >
               Create
             </Button>
           </>
@@ -64,7 +69,7 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
             />
           </label>
           <p className="font-mono text-xs text-muted-foreground">
-            Slug: {createSlug || "—"}
+            {createSlug || "—"}
           </p>
         </form>
       </EditorDialog>
@@ -92,7 +97,11 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
             >
               Cancel
             </Button>
-            <Button type="submit" form="rename-project-form" disabled={isLoading}>
+            <Button
+              type="submit"
+              form="rename-project-form"
+              disabled={isLoading || !renameName.trim()}
+            >
               Save
             </Button>
           </>
