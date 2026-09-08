@@ -3,25 +3,23 @@
 import { useCallback, useMemo, useState, type FormEvent } from "react"
 
 import type { MockProject } from "@/lib/mock-projects"
+import {
+  isValidProjectSlug,
+  sanitizeProjectName,
+  toProjectSlug,
+} from "@/lib/project-slug"
 
 export type ProjectDialog = "create" | "rename" | "delete" | null
-
-export function toProjectSlug(name: string) {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-}
 
 export function useProjectDialogs() {
   const [dialog, setDialog] = useState<ProjectDialog>(null)
   const [activeProject, setActiveProject] = useState<MockProject | null>(null)
-  const [createName, setCreateName] = useState("")
-  const [renameName, setRenameName] = useState("")
+  const [createName, setCreateNameState] = useState("")
+  const [renameName, setRenameNameState] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
   const createSlug = useMemo(() => toProjectSlug(createName), [createName])
+  const isCreateSlugValid = isValidProjectSlug(createSlug)
 
   const closeDialog = useCallback(() => {
     if (isLoading) {
@@ -33,14 +31,14 @@ export function useProjectDialogs() {
   }, [isLoading])
 
   const openCreate = useCallback(() => {
-    setCreateName("")
+    setCreateNameState("")
     setActiveProject(null)
     setDialog("create")
   }, [])
 
   const openRename = useCallback((project: MockProject) => {
     setActiveProject(project)
-    setRenameName(project.name)
+    setRenameNameState(project.name)
     setDialog("rename")
   }, [])
 
@@ -49,25 +47,33 @@ export function useProjectDialogs() {
     setDialog("delete")
   }, [])
 
+  const setCreateName = useCallback((value: string) => {
+    setCreateNameState(sanitizeProjectName(value))
+  }, [])
+
+  const setRenameName = useCallback((value: string) => {
+    setRenameNameState(sanitizeProjectName(value))
+  }, [])
+
   const submitCreate = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault()
-      if (!createName.trim() || isLoading) {
+      if (!isCreateSlugValid || isLoading) {
         return
       }
 
       setIsLoading(true)
       setIsLoading(false)
       setDialog(null)
-      setCreateName("")
+      setCreateNameState("")
     },
-    [createName, isLoading]
+    [isCreateSlugValid, isLoading]
   )
 
   const submitRename = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault()
-      if (!renameName.trim() || !activeProject || isLoading) {
+      if (!isValidProjectSlug(toProjectSlug(renameName)) || !activeProject || isLoading) {
         return
       }
 
@@ -95,6 +101,7 @@ export function useProjectDialogs() {
     activeProject,
     createName,
     createSlug,
+    isCreateSlugValid,
     renameName,
     isLoading,
     setCreateName,
