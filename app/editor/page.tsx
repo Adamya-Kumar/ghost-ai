@@ -1,3 +1,5 @@
+import { EditorHome } from "@/components/editor/editor-home"
+
 export default function EditorPage() {
-  return <div className="min-h-[calc(100vh-3rem)] bg-background" />;
+  return <EditorHome />
 }
