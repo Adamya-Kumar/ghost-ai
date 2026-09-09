@@ -3,10 +3,10 @@
 import { EditorDialog } from "@/components/editor/editor-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import type { ProjectDialogsState } from "@/hooks/use-project-dialogs"
+import type { ProjectActionsState } from "@/hooks/use-project-actions"
 
 type ProjectDialogsProps = {
-  dialogs: ProjectDialogsState
+  dialogs: ProjectActionsState
 }
 
 export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
@@ -14,7 +14,7 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
     dialog,
     activeProject,
     createName,
-    createSlug,
+    createRoomId,
     isCreateSlugValid,
     renameName,
     isLoading,
@@ -36,7 +36,7 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
           }
         }}
         title="Create project"
-        description="Name this architecture workspace. The slug updates as you type."
+        description="Name this architecture workspace. The room ID updates as you type."
         footer={
           <>
             <Button
@@ -57,7 +57,11 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
           </>
         }
       >
-        <form id="create-project-form" className="grid gap-3" onSubmit={submitCreate}>
+        <form
+          id="create-project-form"
+          className="grid gap-3"
+          onSubmit={submitCreate}
+        >
           <label className="grid gap-1.5 text-sm">
             <span>Project name</span>
             <Input
@@ -69,7 +73,7 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
             />
           </label>
           <p className="font-mono text-xs text-muted-foreground">
-            {createSlug || "—"}
+            {createRoomId || "—"}
           </p>
         </form>
       </EditorDialog>
@@ -83,9 +87,7 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
         }}
         title="Rename project"
         description={
-          activeProject
-            ? `Current name: ${activeProject.name}`
-            : undefined
+          activeProject ? `Current name: ${activeProject.name}` : undefined
         }
         footer={
           <>
@@ -107,7 +109,11 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
           </>
         }
       >
-        <form id="rename-project-form" className="grid gap-3" onSubmit={submitRename}>
+        <form
+          id="rename-project-form"
+          className="grid gap-3"
+          onSubmit={submitRename}
+        >
           <label className="grid gap-1.5 text-sm">
             <span>Project name</span>
             <Input

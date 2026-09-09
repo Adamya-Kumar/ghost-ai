@@ -30,6 +30,12 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(new URL(destination, req.url));
   }
 
+  // API routes enforce auth in handlers so unauthenticated calls get 401
+  // (Clerk's auth.protect() returns 404 for non-document requests).
+  if (pathname.startsWith("/api/")) {
+    return;
+  }
+
   await auth.protect();
 });
 
