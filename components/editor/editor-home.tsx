@@ -9,7 +9,7 @@ export function EditorHome() {
   const { openCreate } = useProjectDialogActions()
 
   return (
-    <div className="flex min-h-[calc(100vh-3rem)] flex-col items-center justify-center gap-3 px-6 text-center">
+    <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
       <h1 className="font-heading text-2xl font-medium tracking-tight">
         Create a project or open an existing one
       </h1>
