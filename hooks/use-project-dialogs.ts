@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState, type FormEvent } from "react"
+import { useCallback, useMemo, useState, type SubmitEvent } from "react"
 
 import type { MockProject } from "@/lib/mock-projects"
 import {
@@ -38,7 +38,7 @@ export function useProjectDialogs() {
 
   const openRename = useCallback((project: MockProject) => {
     setActiveProject(project)
-    setRenameNameState(project.name)
+    setRenameNameState(sanitizeProjectName(project.name))
     setDialog("rename")
   }, [])
 
@@ -56,7 +56,7 @@ export function useProjectDialogs() {
   }, [])
 
   const submitCreate = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
+    (event: SubmitEvent<HTMLFormElement>) => {
       event.preventDefault()
       if (!isCreateSlugValid || isLoading) {
         return
@@ -71,7 +71,7 @@ export function useProjectDialogs() {
   )
 
   const submitRename = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
+    (event: SubmitEvent<HTMLFormElement>) => {
       event.preventDefault()
       if (!isValidProjectSlug(toProjectSlug(renameName)) || !activeProject || isLoading) {
         return
