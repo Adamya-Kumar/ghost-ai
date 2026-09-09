@@ -1,0 +1,6 @@
+{
+  "prisma.diagnostics.enable": false,
+  "files.associations": {
+    "**/prisma/model/*.prisma": "prisma-next"
+  }
+}
