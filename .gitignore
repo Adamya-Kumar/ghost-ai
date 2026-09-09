@@ -39,3 +39,24 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+node_modules/
+dist/
+.env
+
+
+
+
+context/feature-specs/01-desgin-system.md
+context/feature-specs/02-editor.md
+context/feature-specs/03-auth.md
+context/feature-specs/04-project-dialogs.md
+context/feature-specs/05-project-management.md
+context/feature-specs/06-project-settings.md
+context/feature-specs/07-project-sharing.md
+context/feature-specs/08-project-collaboration.md
+context/feature-specs/09-project-notifications.md
+context/feature-specs/10-project-analytics.md
+.claude
+.cursor
+.devin
+.agents
