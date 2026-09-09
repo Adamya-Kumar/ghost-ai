@@ -1,41 +1,101 @@
-import { DraftingCompass } from "lucide-react"
+"use client"
 
-export function WorkspaceCanvas() {
+import {
+  ClientSideSuspense,
+  LiveblocksProvider,
+  RoomProvider,
+} from "@liveblocks/react/suspense"
+import { useLiveblocksFlow } from "@liveblocks/react-flow"
+import {
+  Background,
+  BackgroundVariant,
+  ConnectionMode,
+  MiniMap,
+  ReactFlow,
+} from "@xyflow/react"
+import { Component, type ReactNode } from "react"
+
+import type { CanvasEdge, CanvasNode } from "@/types/canvas"
+
+import "@xyflow/react/dist/style.css"
+
+type WorkspaceCanvasProps = {
+  roomId: string
+}
+
+function CanvasStatus({ message }: { message: string }) {
   return (
-    <div className="relative flex h-full min-h-0 flex-1 items-center justify-center overflow-hidden bg-background px-8">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-40"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, color-mix(in oklch, var(--border) 55%, transparent) 1px, transparent 1px),
-            linear-gradient(to bottom, color-mix(in oklch, var(--border) 55%, transparent) 1px, transparent 1px)
-          `,
-          backgroundSize: "56px 56px",
-          maskImage:
-            "radial-gradient(ellipse at center, black 35%, transparent 78%)",
-        }}
-      />
+    <div className="flex h-full min-h-0 flex-1 items-center justify-center bg-background px-6 text-center text-sm text-muted-foreground">
+      {message}
+    </div>
+  )
+}
 
-      <div className="relative z-10 flex max-w-[34rem] flex-col items-center text-center">
-        <div className="mb-6 flex size-16 items-center justify-center rounded-[1.25rem] border border-primary/25 bg-primary/10 text-primary shadow-[0_0_48px_color-mix(in_oklch,var(--primary)_22%,transparent)]">
-          <DraftingCompass className="size-7" aria-hidden />
-        </div>
+class LiveblocksConnectionError extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false }
 
-        <p className="text-[11px] font-semibold tracking-[0.2em] text-primary uppercase">
-          Workspace shell
-        </p>
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
 
-        <h1 className="mt-4 font-heading text-[2rem] leading-tight font-semibold tracking-tight text-foreground sm:text-[2.35rem]">
-          Canvas and collaboration tooling land here next.
-        </h1>
+  render() {
+    if (this.state.hasError) {
+      return (
+        <CanvasStatus message="Could not connect to the live canvas. Refresh to try again." />
+      )
+    }
 
-        <p className="mt-5 max-w-md text-[15px] leading-relaxed text-muted-foreground">
-          This room is ready for the shared architecture canvas, durable AI
-          workflows, and real-time presence. For now, the shell is wired with
-          project context and navigation only.
-        </p>
-      </div>
+    return this.props.children
+  }
+}
+
+function CollaborativeCanvas() {
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect } =
+    useLiveblocksFlow<CanvasNode, CanvasEdge>({
+      suspense: true,
+      nodes: { initial: [] },
+      edges: { initial: [] },
+    })
+
+  return (
+    <div className="h-full min-h-0 w-full flex-1 bg-background">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        connectionMode={ConnectionMode.Loose}
+        fitView
+        colorMode="dark"
+      >
+        <MiniMap />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+      </ReactFlow>
+    </div>
+  )
+}
+
+export function WorkspaceCanvas({ roomId }: WorkspaceCanvasProps) {
+  return (
+    <div className="h-full min-h-0 min-w-0 flex-1">
+      <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
+        <RoomProvider
+          id={roomId}
+          initialPresence={{ cursor: null, isThinking: false }}
+        >
+          <LiveblocksConnectionError>
+            <ClientSideSuspense
+              fallback={<CanvasStatus message="Loading canvas…" />}
+            >
+              <CollaborativeCanvas />
+            </ClientSideSuspense>
+          </LiveblocksConnectionError>
+        </RoomProvider>
+      </LiveblocksProvider>
     </div>
   )
 }

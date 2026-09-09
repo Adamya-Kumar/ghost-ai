@@ -25,5 +25,5 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
     return <AccessDenied />;
   }
 
-  return <WorkspaceCanvas />;
+  return <WorkspaceCanvas roomId={project.id} />;
 }
