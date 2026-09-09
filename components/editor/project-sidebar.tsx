@@ -1,26 +1,30 @@
 "use client"
 
+import Link from "next/link"
 import { Pencil, Plus, Trash2, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  mockOwnedProjects,
-  mockSharedProjects,
-  type MockProject,
-} from "@/lib/mock-projects"
+import type { ProjectActionTarget } from "@/hooks/use-project-actions"
+import type { ProjectSummary } from "@/lib/projects"
 import { cn } from "@/lib/utils"
 
 type ProjectSidebarProps = {
   isOpen: boolean
+  ownedProjects: ProjectSummary[]
+  sharedProjects: ProjectSummary[]
+  activeProjectId?: string | null
   onClose: () => void
   onCreate: () => void
-  onRename: (project: MockProject) => void
-  onDelete: (project: MockProject) => void
+  onRename: (project: ProjectActionTarget) => void
+  onDelete: (project: ProjectActionTarget) => void
 }
 
 export function ProjectSidebar({
   isOpen,
+  ownedProjects,
+  sharedProjects,
+  activeProjectId,
   onClose,
   onCreate,
   onRename,
@@ -31,7 +35,7 @@ export function ProjectSidebar({
       aria-hidden={!isOpen}
       className={cn(
         "pointer-events-none fixed top-12 left-0 z-40 flex h-[calc(100vh-3rem)] w-72 translate-x-[-100%] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-lg transition-transform duration-200 ease-out",
-        isOpen && "pointer-events-auto translate-x-0"
+        isOpen && "pointer-events-auto translate-x-0",
       )}
     >
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-sidebar-border px-3">
@@ -56,16 +60,17 @@ export function ProjectSidebar({
           <TabsTrigger value="shared">Shared</TabsTrigger>
         </TabsList>
         <TabsContent value="my-projects" className="min-h-0 flex-1 overflow-y-auto">
-          {mockOwnedProjects.length === 0 ? (
+          {ownedProjects.length === 0 ? (
             <p className="flex h-full items-center justify-center text-center text-muted-foreground">
               No projects yet.
             </p>
           ) : (
             <ul className="flex flex-col gap-1">
-              {mockOwnedProjects.map((project) => (
+              {ownedProjects.map((project) => (
                 <ProjectRow
                   key={project.id}
                   project={project}
+                  isActive={project.id === activeProjectId}
                   showActions
                   onRename={onRename}
                   onDelete={onDelete}
@@ -75,14 +80,19 @@ export function ProjectSidebar({
           )}
         </TabsContent>
         <TabsContent value="shared" className="min-h-0 flex-1 overflow-y-auto">
-          {mockSharedProjects.length === 0 ? (
+          {sharedProjects.length === 0 ? (
             <p className="flex h-full items-center justify-center text-center text-muted-foreground">
               No shared projects yet.
             </p>
           ) : (
             <ul className="flex flex-col gap-1">
-              {mockSharedProjects.map((project) => (
-                <ProjectRow key={project.id} project={project} showActions={false} />
+              {sharedProjects.map((project) => (
+                <ProjectRow
+                  key={project.id}
+                  project={project}
+                  isActive={project.id === activeProjectId}
+                  showActions={false}
+                />
               ))}
             </ul>
           )}
@@ -100,21 +110,33 @@ export function ProjectSidebar({
 }
 
 type ProjectRowProps = {
-  project: MockProject
+  project: ProjectSummary
+  isActive: boolean
   showActions: boolean
-  onRename?: (project: MockProject) => void
-  onDelete?: (project: MockProject) => void
+  onRename?: (project: ProjectActionTarget) => void
+  onDelete?: (project: ProjectActionTarget) => void
 }
 
 function ProjectRow({
   project,
+  isActive,
   showActions,
   onRename,
   onDelete,
 }: ProjectRowProps) {
   return (
-    <li className="flex items-center gap-1 rounded-lg px-2 py-1.5 hover:bg-sidebar-accent">
-      <span className="min-w-0 flex-1 truncate text-sm">{project.name}</span>
+    <li
+      className={cn(
+        "flex items-center gap-1 rounded-lg px-2 py-1.5 hover:bg-sidebar-accent",
+        isActive && "bg-sidebar-accent",
+      )}
+    >
+      <Link
+        href={`/editor/${project.id}`}
+        className="min-w-0 flex-1 truncate text-sm"
+      >
+        {project.name}
+      </Link>
       {showActions ? (
         <span className="flex shrink-0 items-center">
           <Button
