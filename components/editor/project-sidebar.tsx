@@ -34,12 +34,12 @@ export function ProjectSidebar({
     <aside
       aria-hidden={!isOpen}
       className={cn(
-        "pointer-events-none fixed top-12 left-0 z-40 flex h-[calc(100vh-3rem)] w-72 translate-x-[-100%] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-lg transition-transform duration-200 ease-out",
-        isOpen && "pointer-events-auto translate-x-0",
+        "flex h-full w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width,opacity,margin] duration-200 ease-out",
+        !isOpen && "pointer-events-none w-0 overflow-hidden border-r-0 opacity-0",
       )}
     >
-      <div className="flex h-12 shrink-0 items-center justify-between border-b border-sidebar-border px-3">
-        <h2 className="text-sm font-medium">Projects</h2>
+      <div className="flex h-12 w-72 shrink-0 items-center justify-between border-b border-sidebar-border px-3">
+        <h2 className="text-sm font-semibold">Projects</h2>
         <Button
           type="button"
           variant="ghost"
@@ -53,15 +53,18 @@ export function ProjectSidebar({
 
       <Tabs
         defaultValue="my-projects"
-        className="flex min-h-0 flex-1 flex-col gap-0 p-3"
+        className="flex w-72 min-h-0 flex-1 flex-col gap-0 p-3"
       >
         <TabsList className="w-full">
           <TabsTrigger value="my-projects">My Projects</TabsTrigger>
           <TabsTrigger value="shared">Shared</TabsTrigger>
         </TabsList>
-        <TabsContent value="my-projects" className="min-h-0 flex-1 overflow-y-auto">
+        <TabsContent
+          value="my-projects"
+          className="min-h-0 flex-1 overflow-y-auto pt-3"
+        >
           {ownedProjects.length === 0 ? (
-            <p className="flex h-full items-center justify-center text-center text-muted-foreground">
+            <p className="flex h-full items-center justify-center text-center text-sm text-muted-foreground">
               No projects yet.
             </p>
           ) : (
@@ -79,9 +82,12 @@ export function ProjectSidebar({
             </ul>
           )}
         </TabsContent>
-        <TabsContent value="shared" className="min-h-0 flex-1 overflow-y-auto">
+        <TabsContent
+          value="shared"
+          className="min-h-0 flex-1 overflow-y-auto pt-3"
+        >
           {sharedProjects.length === 0 ? (
-            <p className="flex h-full items-center justify-center text-center text-muted-foreground">
+            <p className="flex h-full items-center justify-center text-center text-sm text-muted-foreground">
               No shared projects yet.
             </p>
           ) : (
@@ -99,8 +105,9 @@ export function ProjectSidebar({
         </TabsContent>
       </Tabs>
 
-      <div className="shrink-0 border-t border-sidebar-border p-3">
-        <Button type="button" className="w-full" onClick={onCreate}>
+      <div className="flex w-72 shrink-0 items-center gap-2 border-t border-sidebar-border p-3">
+       
+        <Button type="button" className="min-w-0 flex-1" onClick={onCreate}>
           <Plus data-icon="inline-start" />
           New Project
         </Button>
@@ -127,18 +134,25 @@ function ProjectRow({
   return (
     <li
       className={cn(
-        "flex items-center gap-1 rounded-lg px-2 py-1.5 hover:bg-sidebar-accent",
-        isActive && "bg-sidebar-accent",
+        "group flex items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 hover:bg-sidebar-accent",
+        isActive && "border-primary/35 bg-primary/10",
       )}
     >
+      <span
+        className={cn(
+          "size-1.5 shrink-0 rounded-full",
+          isActive ? "bg-primary" : "bg-transparent",
+        )}
+        aria-hidden
+      />
       <Link
         href={`/editor/${project.id}`}
-        className="min-w-0 flex-1 truncate text-sm"
+        className="min-w-0 flex-1 truncate text-sm font-medium"
       >
         {project.name}
       </Link>
       {showActions ? (
-        <span className="flex shrink-0 items-center">
+        <span className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <Button
             type="button"
             variant="ghost"
