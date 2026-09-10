@@ -12,15 +12,38 @@ import {
   ConnectionMode,
   MiniMap,
   ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
 } from "@xyflow/react"
-import { Component, type ReactNode } from "react"
+import { Component, useRef, type DragEvent, type ReactNode } from "react"
 
-import type { CanvasEdge, CanvasNode } from "@/types/canvas"
+import { CanvasNodeView } from "@/components/editor/canvas-node"
+import { ShapePanel } from "@/components/editor/shape-panel"
+import {
+  DEFAULT_NODE_COLOR,
+  DEFAULT_SHAPE_SIZES,
+  parseShapeDragPayload,
+  SHAPE_DRAG_MIME,
+  type CanvasEdge,
+  type CanvasNode,
+  type CanvasShape,
+} from "@/types/canvas"
 
 import "@xyflow/react/dist/style.css"
 
 type WorkspaceCanvasProps = {
   roomId: string
+}
+
+const nodeTypes = {
+  canvasNode: CanvasNodeView,
+}
+
+let nodeIdCounter = 0
+
+function createNodeId(shape: CanvasShape) {
+  nodeIdCounter += 1
+  return `${shape}-${Date.now()}-${nodeIdCounter}`
 }
 
 function CanvasStatus({ message }: { message: string }) {
@@ -53,6 +76,8 @@ class LiveblocksConnectionError extends Component<
 }
 
 function CollaborativeCanvas() {
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const { screenToFlowPosition } = useReactFlow()
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect } =
     useLiveblocksFlow<CanvasNode, CanvasEdge>({
       suspense: true,
@@ -60,14 +85,87 @@ function CollaborativeCanvas() {
       edges: { initial: [] },
     })
 
+  function addShapeNode(
+    shape: CanvasShape,
+    size: { width: number; height: number },
+    position: { x: number; y: number },
+  ) {
+    const newNode: CanvasNode = {
+      id: createNodeId(shape),
+      type: "canvasNode",
+      position,
+      width: size.width,
+      height: size.height,
+      style: { width: size.width, height: size.height },
+      data: {
+        label: "",
+        color: DEFAULT_NODE_COLOR,
+        shape,
+      },
+    }
+
+    onNodesChange([{ type: "add", item: newNode }])
+  }
+
+  function onDragOver(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = "move"
+  }
+
+  function onDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+
+    const payload = parseShapeDragPayload(
+      event.dataTransfer.getData(SHAPE_DRAG_MIME),
+    )
+    if (!payload) {
+      return
+    }
+
+    const position = screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    })
+
+    addShapeNode(
+      payload.shape,
+      { width: payload.width, height: payload.height },
+      position,
+    )
+  }
+
+  function onAddShape(shape: CanvasShape) {
+    const bounds = wrapperRef.current?.getBoundingClientRect()
+    if (!bounds) {
+      return
+    }
+
+    const size = DEFAULT_SHAPE_SIZES[shape]
+    const position = screenToFlowPosition({
+      x: bounds.left + bounds.width / 2,
+      y: bounds.top + bounds.height / 2,
+    })
+
+    addShapeNode(shape, size, {
+      x: position.x - size.width / 2,
+      y: position.y - size.height / 2,
+    })
+  }
+
   return (
-    <div className="h-full min-h-0 w-full flex-1 bg-background">
+    <div
+      ref={wrapperRef}
+      className="relative h-full min-h-0 w-full flex-1 bg-background"
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
         fitView
         colorMode="dark"
@@ -75,6 +173,7 @@ function CollaborativeCanvas() {
         <MiniMap />
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
       </ReactFlow>
+      <ShapePanel onAddShape={onAddShape} />
     </div>
   )
 }
@@ -91,7 +190,9 @@ export function WorkspaceCanvas({ roomId }: WorkspaceCanvasProps) {
             <ClientSideSuspense
               fallback={<CanvasStatus message="Loading canvas…" />}
             >
-              <CollaborativeCanvas />
+              <ReactFlowProvider>
+                <CollaborativeCanvas />
+              </ReactFlowProvider>
             </ClientSideSuspense>
           </LiveblocksConnectionError>
         </RoomProvider>
