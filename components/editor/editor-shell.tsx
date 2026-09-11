@@ -9,6 +9,7 @@ import { ProjectDialogs } from "@/components/editor/project-dialogs"
 import { ProjectDialogsProvider } from "@/components/editor/project-dialogs-context"
 import { ProjectSidebar } from "@/components/editor/project-sidebar"
 import { ShareDialog } from "@/components/editor/share-dialog"
+import { StarterTemplatesDialogProvider } from "@/components/editor/starter-templates-modal"
 import { useProjectActions } from "@/hooks/use-project-actions"
 import type { ProjectSummary } from "@/lib/projects"
 
@@ -26,6 +27,7 @@ export function EditorShell({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(true)
   const [isShareOpen, setIsShareOpen] = useState(false)
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false)
   const params = useParams<{ roomId?: string; projectId?: string }>()
   const activeProjectId =
     typeof params.roomId === "string"
@@ -43,45 +45,51 @@ export function EditorShell({
   const actions = useProjectActions({ activeProjectId })
 
   return (
-    <div className="relative flex h-dvh min-h-dvh flex-col overflow-hidden bg-background">
-      <EditorNavbar
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={() => setIsSidebarOpen((open) => !open)}
-        projectName={activeProject?.name ?? null}
-        showWorkspaceActions={showWorkspaceActions}
-        isAiSidebarOpen={isAiSidebarOpen}
-        onToggleAiSidebar={() => setIsAiSidebarOpen((open) => !open)}
-        onShare={() => setIsShareOpen(true)}
-      />
-
-      {activeProject ? (
-        <ShareDialog
-          open={isShareOpen}
-          onOpenChange={setIsShareOpen}
-          projectId={activeProject.id}
-          isOwner={ownedProjects.some(
-            (project) => project.id === activeProject.id,
-          )}
+    <StarterTemplatesDialogProvider
+      open={isTemplatesOpen}
+      onOpenChange={setIsTemplatesOpen}
+    >
+      <div className="relative flex h-dvh min-h-dvh flex-col overflow-hidden bg-background">
+        <EditorNavbar
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={() => setIsSidebarOpen((open) => !open)}
+          projectName={activeProject?.name ?? null}
+          showWorkspaceActions={showWorkspaceActions}
+          isAiSidebarOpen={isAiSidebarOpen}
+          onToggleAiSidebar={() => setIsAiSidebarOpen((open) => !open)}
+          onShare={() => setIsShareOpen(true)}
+          onOpenTemplates={() => setIsTemplatesOpen(true)}
         />
-      ) : null}
 
-      <ProjectDialogs dialogs={actions} />
-      <ProjectDialogsProvider openCreate={actions.openCreate}>
-        <div className="flex min-h-0 flex-1">
-          <ProjectSidebar
-            isOpen={isSidebarOpen}
-            ownedProjects={ownedProjects}
-            sharedProjects={sharedProjects}
-            activeProjectId={activeProjectId}
-            onClose={() => setIsSidebarOpen(false)}
-            onCreate={actions.openCreate}
-            onRename={actions.openRename}
-            onDelete={actions.openDelete}
+        {activeProject ? (
+          <ShareDialog
+            open={isShareOpen}
+            onOpenChange={setIsShareOpen}
+            projectId={activeProject.id}
+            isOwner={ownedProjects.some(
+              (project) => project.id === activeProject.id,
+            )}
           />
-          <div className="relative min-h-0 min-w-0 flex-1">{children}</div>
-          {showWorkspaceActions && isAiSidebarOpen ? <AiSidebar /> : null}
-        </div>
-      </ProjectDialogsProvider>
-    </div>
+        ) : null}
+
+        <ProjectDialogs dialogs={actions} />
+        <ProjectDialogsProvider openCreate={actions.openCreate}>
+          <div className="flex min-h-0 flex-1">
+            <ProjectSidebar
+              isOpen={isSidebarOpen}
+              ownedProjects={ownedProjects}
+              sharedProjects={sharedProjects}
+              activeProjectId={activeProjectId}
+              onClose={() => setIsSidebarOpen(false)}
+              onCreate={actions.openCreate}
+              onRename={actions.openRename}
+              onDelete={actions.openDelete}
+            />
+            <div className="relative min-h-0 min-w-0 flex-1">{children}</div>
+            {showWorkspaceActions && isAiSidebarOpen ? <AiSidebar /> : null}
+          </div>
+        </ProjectDialogsProvider>
+      </div>
+    </StarterTemplatesDialogProvider>
   )
 }

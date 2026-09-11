@@ -21,12 +21,26 @@ import {
   useReactFlow,
   type DefaultEdgeOptions,
 } from "@xyflow/react"
-import { Component, useRef, type DragEvent, type ReactNode } from "react"
+import {
+  Component,
+  useEffect,
+  useRef,
+  type DragEvent,
+  type ReactNode,
+} from "react"
 
 import { CanvasControlBar } from "@/components/editor/canvas-control-bar"
 import { CanvasEdgeView } from "@/components/editor/canvas-edge"
 import { CanvasNodeView } from "@/components/editor/canvas-node"
 import { ShapePanel } from "@/components/editor/shape-panel"
+import {
+  StarterTemplatesModal,
+  useStarterTemplatesDialog,
+} from "@/components/editor/starter-templates-modal"
+import {
+  cloneTemplateGraph,
+  type CanvasTemplate,
+} from "@/components/editor/starter-templates"
 import {
   useKeyboardShortcuts,
   ZOOM_DURATION_MS,
@@ -108,12 +122,14 @@ class LiveblocksConnectionError extends Component<
 
 function CollaborativeCanvas() {
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const pendingFitView = useRef(false)
   const reactFlow = useReactFlow()
   const { screenToFlowPosition, zoomIn, zoomOut, fitView } = reactFlow
   const undo = useUndo()
   const redo = useRedo()
   const canUndo = useCanUndo()
   const canRedo = useCanRedo()
+  const templatesDialog = useStarterTemplatesDialog()
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect } =
     useLiveblocksFlow<CanvasNode, CanvasEdge>({
       suspense: true,
@@ -122,6 +138,15 @@ function CollaborativeCanvas() {
     })
 
   useKeyboardShortcuts(reactFlow, { undo, redo })
+
+  useEffect(() => {
+    if (!pendingFitView.current || nodes.length === 0) {
+      return
+    }
+
+    pendingFitView.current = false
+    void fitView({ duration: ZOOM_DURATION_MS, padding: 0.2 })
+  }, [nodes, edges, fitView])
 
   const canvasEdges = edges.map((edge) => ({
     ...edge,
@@ -178,6 +203,36 @@ function CollaborativeCanvas() {
       { width: payload.width, height: payload.height },
       position,
     )
+  }
+
+  function importTemplate(template: CanvasTemplate) {
+    const graph = cloneTemplateGraph(template)
+
+    if (edges.length > 0) {
+      onEdgesChange(
+        edges.map((edge) => ({ type: "remove" as const, id: edge.id })),
+      )
+    }
+
+    if (nodes.length > 0) {
+      onNodesChange(
+        nodes.map((node) => ({ type: "remove" as const, id: node.id })),
+      )
+    }
+
+    if (graph.nodes.length > 0) {
+      onNodesChange(
+        graph.nodes.map((node) => ({ type: "add" as const, item: node })),
+      )
+    }
+
+    if (graph.edges.length > 0) {
+      onEdgesChange(
+        graph.edges.map((edge) => ({ type: "add" as const, item: edge })),
+      )
+    }
+
+    pendingFitView.current = true
   }
 
   function onAddShape(shape: CanvasShape) {
@@ -237,6 +292,13 @@ function CollaborativeCanvas() {
         canRedo={canRedo}
       />
       <ShapePanel onAddShape={onAddShape} />
+      {templatesDialog ? (
+        <StarterTemplatesModal
+          open={templatesDialog.open}
+          onOpenChange={templatesDialog.onOpenChange}
+          onImport={importTemplate}
+        />
+      ) : null}
     </div>
   )
 }
