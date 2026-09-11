@@ -1,0 +1,13 @@
+---
+description: After each completed feature, give git commit and push commands — do not run them.
+alwaysApply: true
+---
+
+# After Feature Build: Git Commands Only
+
+When a feature spec is done (`npm run build` / checks pass):
+
+- Do **not** run `git commit` or `git push`.
+- Print copy-paste PowerShell commands: `git add` (feature files only), `git commit -m`, `git push -u origin HEAD`.
+- Message style: `Feature: <what shipped>: pass`.
+- Skip `.env*`, `.next`, and gitignored `context/*` unless asked.

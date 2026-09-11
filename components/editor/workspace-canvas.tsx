@@ -4,6 +4,10 @@ import {
   ClientSideSuspense,
   LiveblocksProvider,
   RoomProvider,
+  useCanRedo,
+  useCanUndo,
+  useRedo,
+  useUndo,
 } from "@liveblocks/react/suspense"
 import { useLiveblocksFlow } from "@liveblocks/react-flow"
 import {
@@ -12,17 +16,35 @@ import {
   ConnectionLineType,
   ConnectionMode,
   MarkerType,
-  MiniMap,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
   type DefaultEdgeOptions,
 } from "@xyflow/react"
-import { Component, useRef, type DragEvent, type ReactNode } from "react"
+import {
+  Component,
+  useEffect,
+  useRef,
+  type DragEvent,
+  type ReactNode,
+} from "react"
 
+import { CanvasControlBar } from "@/components/editor/canvas-control-bar"
 import { CanvasEdgeView } from "@/components/editor/canvas-edge"
 import { CanvasNodeView } from "@/components/editor/canvas-node"
 import { ShapePanel } from "@/components/editor/shape-panel"
+import {
+  StarterTemplatesModal,
+  useStarterTemplatesDialog,
+} from "@/components/editor/starter-templates-modal"
+import {
+  cloneTemplateGraph,
+  type CanvasTemplate,
+} from "@/components/editor/starter-templates"
+import {
+  useKeyboardShortcuts,
+  ZOOM_DURATION_MS,
+} from "@/hooks/useKeyboardShortcuts"
 import {
   DEFAULT_NODE_COLOR,
   DEFAULT_NODE_TEXT_COLOR,
@@ -100,13 +122,31 @@ class LiveblocksConnectionError extends Component<
 
 function CollaborativeCanvas() {
   const wrapperRef = useRef<HTMLDivElement>(null)
-  const { screenToFlowPosition } = useReactFlow()
+  const pendingFitView = useRef(false)
+  const reactFlow = useReactFlow()
+  const { screenToFlowPosition, zoomIn, zoomOut, fitView } = reactFlow
+  const undo = useUndo()
+  const redo = useRedo()
+  const canUndo = useCanUndo()
+  const canRedo = useCanRedo()
+  const templatesDialog = useStarterTemplatesDialog()
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect } =
     useLiveblocksFlow<CanvasNode, CanvasEdge>({
       suspense: true,
       nodes: { initial: [] },
       edges: { initial: [] },
     })
+
+  useKeyboardShortcuts(reactFlow, { undo, redo })
+
+  useEffect(() => {
+    if (!pendingFitView.current || nodes.length === 0) {
+      return
+    }
+
+    pendingFitView.current = false
+    void fitView({ duration: ZOOM_DURATION_MS, padding: 0.2 })
+  }, [nodes, edges, fitView])
 
   const canvasEdges = edges.map((edge) => ({
     ...edge,
@@ -165,6 +205,36 @@ function CollaborativeCanvas() {
     )
   }
 
+  function importTemplate(template: CanvasTemplate) {
+    const graph = cloneTemplateGraph(template)
+
+    if (edges.length > 0) {
+      onEdgesChange(
+        edges.map((edge) => ({ type: "remove" as const, id: edge.id })),
+      )
+    }
+
+    if (nodes.length > 0) {
+      onNodesChange(
+        nodes.map((node) => ({ type: "remove" as const, id: node.id })),
+      )
+    }
+
+    if (graph.nodes.length > 0) {
+      onNodesChange(
+        graph.nodes.map((node) => ({ type: "add" as const, item: node })),
+      )
+    }
+
+    if (graph.edges.length > 0) {
+      onEdgesChange(
+        graph.edges.map((edge) => ({ type: "add" as const, item: edge })),
+      )
+    }
+
+    pendingFitView.current = true
+  }
+
   function onAddShape(shape: CanvasShape) {
     const bounds = wrapperRef.current?.getBoundingClientRect()
     if (!bounds) {
@@ -204,10 +274,31 @@ function CollaborativeCanvas() {
         fitView
         colorMode="dark"
       >
-        <MiniMap />
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
       </ReactFlow>
+      <CanvasControlBar
+        onZoomOut={() => {
+          void zoomOut({ duration: ZOOM_DURATION_MS })
+        }}
+        onFitView={() => {
+          void fitView({ duration: ZOOM_DURATION_MS })
+        }}
+        onZoomIn={() => {
+          void zoomIn({ duration: ZOOM_DURATION_MS })
+        }}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+      />
       <ShapePanel onAddShape={onAddShape} />
+      {templatesDialog ? (
+        <StarterTemplatesModal
+          open={templatesDialog.open}
+          onOpenChange={templatesDialog.onOpenChange}
+          onImport={importTemplate}
+        />
+      ) : null}
     </div>
   )
 }
