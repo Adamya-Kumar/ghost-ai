@@ -9,18 +9,23 @@ import { useLiveblocksFlow } from "@liveblocks/react-flow"
 import {
   Background,
   BackgroundVariant,
+  ConnectionLineType,
   ConnectionMode,
+  MarkerType,
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  type DefaultEdgeOptions,
 } from "@xyflow/react"
 import { Component, useRef, type DragEvent, type ReactNode } from "react"
 
+import { CanvasEdgeView } from "@/components/editor/canvas-edge"
 import { CanvasNodeView } from "@/components/editor/canvas-node"
 import { ShapePanel } from "@/components/editor/shape-panel"
 import {
   DEFAULT_NODE_COLOR,
+  DEFAULT_NODE_TEXT_COLOR,
   DEFAULT_SHAPE_SIZES,
   parseShapeDragPayload,
   SHAPE_DRAG_MIME,
@@ -37,6 +42,24 @@ type WorkspaceCanvasProps = {
 
 const nodeTypes = {
   canvasNode: CanvasNodeView,
+}
+
+const edgeTypes = {
+  canvasEdge: CanvasEdgeView,
+}
+
+const defaultEdgeOptions: DefaultEdgeOptions = {
+  type: "canvasEdge",
+  data: { label: "" },
+  style: {
+    strokeLinecap: "round",
+  },
+  markerEnd: {
+    type: MarkerType.ArrowClosed,
+    width: 16,
+    height: 16,
+    color: "var(--muted-foreground)",
+  },
 }
 
 let nodeIdCounter = 0
@@ -85,6 +108,13 @@ function CollaborativeCanvas() {
       edges: { initial: [] },
     })
 
+  const canvasEdges = edges.map((edge) => ({
+    ...edge,
+    type: "canvasEdge" as const,
+    markerEnd: edge.markerEnd ?? defaultEdgeOptions.markerEnd,
+    data: { label: edge.data?.label ?? "" },
+  }))
+
   function addShapeNode(
     shape: CanvasShape,
     size: { width: number; height: number },
@@ -100,6 +130,7 @@ function CollaborativeCanvas() {
       data: {
         label: "",
         color: DEFAULT_NODE_COLOR,
+        textColor: DEFAULT_NODE_TEXT_COLOR,
         shape,
       },
     }
@@ -161,11 +192,14 @@ function CollaborativeCanvas() {
     >
       <ReactFlow
         nodes={nodes}
-        edges={edges}
+        edges={canvasEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        defaultEdgeOptions={defaultEdgeOptions}
+        connectionLineType={ConnectionLineType.SmoothStep}
         connectionMode={ConnectionMode.Loose}
         fitView
         colorMode="dark"
