@@ -4,6 +4,10 @@ import {
   ClientSideSuspense,
   LiveblocksProvider,
   RoomProvider,
+  useCanRedo,
+  useCanUndo,
+  useRedo,
+  useUndo,
 } from "@liveblocks/react/suspense"
 import { useLiveblocksFlow } from "@liveblocks/react-flow"
 import {
@@ -12,7 +16,6 @@ import {
   ConnectionLineType,
   ConnectionMode,
   MarkerType,
-  MiniMap,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
@@ -20,9 +23,14 @@ import {
 } from "@xyflow/react"
 import { Component, useRef, type DragEvent, type ReactNode } from "react"
 
+import { CanvasControlBar } from "@/components/editor/canvas-control-bar"
 import { CanvasEdgeView } from "@/components/editor/canvas-edge"
 import { CanvasNodeView } from "@/components/editor/canvas-node"
 import { ShapePanel } from "@/components/editor/shape-panel"
+import {
+  useKeyboardShortcuts,
+  ZOOM_DURATION_MS,
+} from "@/hooks/useKeyboardShortcuts"
 import {
   DEFAULT_NODE_COLOR,
   DEFAULT_NODE_TEXT_COLOR,
@@ -100,13 +108,20 @@ class LiveblocksConnectionError extends Component<
 
 function CollaborativeCanvas() {
   const wrapperRef = useRef<HTMLDivElement>(null)
-  const { screenToFlowPosition } = useReactFlow()
+  const reactFlow = useReactFlow()
+  const { screenToFlowPosition, zoomIn, zoomOut, fitView } = reactFlow
+  const undo = useUndo()
+  const redo = useRedo()
+  const canUndo = useCanUndo()
+  const canRedo = useCanRedo()
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect } =
     useLiveblocksFlow<CanvasNode, CanvasEdge>({
       suspense: true,
       nodes: { initial: [] },
       edges: { initial: [] },
     })
+
+  useKeyboardShortcuts(reactFlow, { undo, redo })
 
   const canvasEdges = edges.map((edge) => ({
     ...edge,
@@ -204,9 +219,23 @@ function CollaborativeCanvas() {
         fitView
         colorMode="dark"
       >
-        <MiniMap />
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
       </ReactFlow>
+      <CanvasControlBar
+        onZoomOut={() => {
+          void zoomOut({ duration: ZOOM_DURATION_MS })
+        }}
+        onFitView={() => {
+          void fitView({ duration: ZOOM_DURATION_MS })
+        }}
+        onZoomIn={() => {
+          void zoomIn({ duration: ZOOM_DURATION_MS })
+        }}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+      />
       <ShapePanel onAddShape={onAddShape} />
     </div>
   )
