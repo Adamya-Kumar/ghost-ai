@@ -139,3 +139,10 @@
     font-family: var(--font-mono), ui-monospace, monospace;
     }
 }
+
+.react-flow__node-canvasNode {
+  background: transparent;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+}
